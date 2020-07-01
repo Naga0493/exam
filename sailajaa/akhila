@@ -1,0 +1,25 @@
+node{
+stage('SCM Checkout'){
+    git 'https://github.com/Naga0493/exam'
+}
+stage('Mvn Package'){
+    def mvnHome = tool name: 'task_maven', type: 'maven'
+    def mvnCMD = "${mvnHome}/bin/mvn"
+sh label: '', script: 'mvn clean package'
+
+}
+stage('Build Docker Image'){
+sh 'docker build -t vaka04/my-app:2.0.0 .'
+}
+stage('Push Docker Image'){
+    withCredentials([string(credentialsId: 'docker-pwd1', variable: 'docker1')]) {
+    sh "docker login -u vaka04 -p ${docker1}"
+}
+sh 'docker push vaka04/my-app:2.0.0'
+}
+stage('RunContainer on Dev Server'){
+    sshagent(['Jenkinsec2useasubuntu']) {
+    sh label: '', script: 'ssh -o StrictHostKeyChecking=no ubuntu@3.134.86.78 \'docker run -p 8080:8080 -d vaka04/my-app:2.0.0\''
+}
+}
+}
